@@ -57,6 +57,11 @@ app.get("/", async (_, res) => {
 
 app.post('/mail', async function(req, res) {
     const {to, body, subject} = req.body;
+    if(!to || !body || !subject) return res.status(400).json({
+        status: 'error',
+        message: 'invalid req body'
+    });
+    
     const params = {
         Destination: { 
           ToAddresses: [
@@ -78,8 +83,8 @@ app.post('/mail', async function(req, res) {
         },
       };
 
-    const data = await ses.sendEmail(params).promise();
-    res.status(200).json({
+    const data = await ses.sendEmail(params).promise().catch(console.log);
+    return res.status(200).json({
         ...data,
         status: 'done'
     });
