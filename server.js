@@ -1,18 +1,10 @@
 require('dotenv').config();
-var express = require('express');
-var bodyParser = require('body-parser');
-var AWS = require('aws-sdk');
-var app = express();
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require("nodemailer");
+const {google} = require("googleapis");
 
-const ses = new AWS.SES({
-    region: process.env.AWS_DEFAULT_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    },
-    apiVersion: '2010-12-01'
-})
-
+const app = express();
 
 //Allow all requests from all domains & localhost
 app.all('/*', function(req, res, next) {
@@ -25,35 +17,14 @@ app.all('/*', function(req, res, next) {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
-app.get("/", async (_, res) => {
-    
-    const params = {
-        Destination: { 
-          ToAddresses: [
-            'kppavu@gmail.com'
-          ]
-        },
-        Source: process.env.AWS_SES_SOURCE,
-        Message: { 
-          Body: { 
-            Text: {
-              Charset: "UTF-8",
-              Data: 'body'
-            }
-          },
-          Subject: {
-            Charset: 'UTF-8',
-            Data: 'subject'
-          }
-        },
-      };
+const oAuth2Client = new google.auth.OAuth2(
+    process.env.CI,
+    process.env.CS,
+);
+oAuth2Client.setCredentials({
+    refresh_token: process.env.REFRESH_TOKEN,
+});
 
-    const data = await ses.sendEmail(params).promise();
-    res.status(200).json({
-        ...data,
-        status: 'done'
-    });
-})
 
 app.post('/mail', async function(req, res) {
     const {to, body, subject} = req.body;
@@ -61,35 +32,34 @@ app.post('/mail', async function(req, res) {
         status: 'error',
         message: 'invalid req body'
     });
-    
-    const params = {
-        Destination: { 
-          ToAddresses: [
-            to
-          ]
-        },
-        Source: process.env.AWS_SES_SOURCE,
-        Message: { 
-          Body: { 
-            Text: {
-              Charset: "UTF-8",
-              Data: body
-            }
-          },
-          Subject: {
-            Charset: 'UTF-8',
-            Data: subject
-          }
-        },
-      };
 
-    const data = await ses.sendEmail(params).promise().catch(console.log);
+    const accessToken = await oAuth2Client.getAccessToken();
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            type: "OAuth2",
+            user: "educity@nonceblox.com",
+            clientId: process.env.CI,
+            clientSecret: process.env.CS,
+            refreshToken: process.env.REFRESH_TOKEN,
+            accessToken: accessToken.token,
+        },
+    });
+
+
+    const data = await transporter.sendMail({
+        from: 'educity@nonceblox.com',
+        to,
+        subject,
+        html: body,
+    }).catch(console.log)
+
     return res.status(200).json({
         ...data,
         status: 'done'
     });
 });
 
-app.listen(6069, () => {
+app.listen(process.env.PORT, () => {
     console.log('ihadi')
 });
