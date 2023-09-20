@@ -17,14 +17,17 @@ app.all('/*', function(req, res, next) {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
-const oAuth2Client = new google.auth.OAuth2(
-    process.env.CI,
-    process.env.CS,
-);
-oAuth2Client.setCredentials({
-    refresh_token: process.env.REFRESH_TOKEN,
-});
+const REFRESH_TOKEN =process.env.REFRESH_TOKEN
+const CLIENT_ID = process.env.CI
+const CLEINT_SECRET = process.env.CS
+const REDIRECT_URI = 'http://localhost:3000';
 
+const oAuth2Client = new google.auth.OAuth2(
+    CLIENT_ID,
+    CLEINT_SECRET,
+    REDIRECT_URI
+);
+oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 app.post('/mail', async function(req, res) {
     const {to, body, subject} = req.body;
@@ -34,22 +37,23 @@ app.post('/mail', async function(req, res) {
     });
 
     const accessToken = await oAuth2Client.getAccessToken();
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
+    const transport = nodemailer.createTransport({
+        service: 'gmail',
         auth: {
-            type: "OAuth2",
-            user: "educity@nonceblox.com",
-            clientId: process.env.CI,
-            clientSecret: process.env.CS,
-            refreshToken: process.env.REFRESH_TOKEN,
-            accessToken: accessToken.token,
+            type: 'OAuth2',
+            user: 'kartik.kalia@nonceblox.com',
+            clientId: CLIENT_ID,
+            clientSecret: CLEINT_SECRET,
+            refreshToken: REFRESH_TOKEN,
+            accessToken: accessToken,
         },
     });
 
+    const emailAdmin = 'kartik.kalia@nonceblox.com'
 
-    const data = await transporter.sendMail({
-        from: 'educity@nonceblox.com',
-        to,
+    const data = await transport.sendMail({
+        from: `"educity" <${emailAdmin}>`,
+        to: [to],
         subject,
         html: body,
     }).catch(console.log)
