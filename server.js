@@ -41,7 +41,7 @@ app.post('/mail', async function(req, res) {
         service: 'gmail',
         auth: {
             type: 'OAuth2',
-            user: 'kartik.kalia@nonceblox.com',
+            user: 'educity@nonceblox.com',
             clientId: CLIENT_ID,
             clientSecret: CLEINT_SECRET,
             refreshToken: REFRESH_TOKEN,
@@ -49,7 +49,7 @@ app.post('/mail', async function(req, res) {
         },
     });
 
-    const emailAdmin = 'kartik.kalia@nonceblox.com'
+    const emailAdmin = 'educity@nonceblox.com'
 
     const data = await transport.sendMail({
         from: `"educity" <${emailAdmin}>`,
